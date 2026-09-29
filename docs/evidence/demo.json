@@ -1,0 +1,33 @@
+{
+  "scenario": "transient-receiver-failure",
+  "passed": true,
+  "elapsed_seconds": 4.268,
+  "event_id": "c04764ac34bdbfe8c53ab8c4620d3aca",
+  "same_key_same_id": true,
+  "different_body_conflict": true,
+  "cross_tenant_hidden": true,
+  "attempts": [
+    {
+      "number": 1,
+      "started_at": "2026-09-29T12:21:49.325909Z",
+      "finished_at": "2026-09-29T12:21:49.335014Z",
+      "outcome": "retry",
+      "http_status": 503
+    },
+    {
+      "number": 2,
+      "started_at": "2026-09-29T12:21:50.88992Z",
+      "finished_at": "2026-09-29T12:21:50.911837Z",
+      "outcome": "retry",
+      "http_status": 503
+    },
+    {
+      "number": 3,
+      "started_at": "2026-09-29T12:21:53.418079Z",
+      "finished_at": "2026-09-29T12:21:53.428405Z",
+      "outcome": "delivered",
+      "http_status": 204
+    }
+  ],
+  "scope": "Synthetic local Docker demonstration; no production SLA implied."
+}

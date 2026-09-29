@@ -1,0 +1,33 @@
+{
+  "scenario": "process-kill-recovery",
+  "passed": true,
+  "elapsed_seconds": 5.823,
+  "event_id": "c568287c70df3a769cd3062d07fa56c3",
+  "same_key_same_id": true,
+  "different_body_conflict": true,
+  "cross_tenant_hidden": true,
+  "attempts": [
+    {
+      "number": 1,
+      "started_at": "2026-09-29T12:21:54.175059Z",
+      "finished_at": "2026-09-29T12:21:54.182039Z",
+      "outcome": "retry",
+      "http_status": 503
+    },
+    {
+      "number": 2,
+      "started_at": "2026-09-29T12:21:56.870707Z",
+      "finished_at": "2026-09-29T12:21:56.911472Z",
+      "outcome": "retry",
+      "http_status": 503
+    },
+    {
+      "number": 3,
+      "started_at": "2026-09-29T12:21:59.455106Z",
+      "finished_at": "2026-09-29T12:21:59.502484Z",
+      "outcome": "delivered",
+      "http_status": 204
+    }
+  ],
+  "scope": "Synthetic local Docker demonstration; no production SLA implied."
+}

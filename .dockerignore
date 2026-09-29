@@ -1,0 +1,7 @@
+.git
+.env
+.env.*
+tmp
+coverage.out
+__pycache__
+*.pyc

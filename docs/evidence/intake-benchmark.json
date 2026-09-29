@@ -1,0 +1,21 @@
+{
+  "kind": "closed-loop local HTTP intake microbenchmark",
+  "requests": 200,
+  "concurrency": 16,
+  "payload_bytes": 57,
+  "elapsed_seconds": 1.6534994999528863,
+  "responses": {
+    "201": 200
+  },
+  "requests_per_second": 120.95558541487232,
+  "latency_ms": {
+    "median": 104.07874998054467,
+    "p95": 214.20459996443242
+  },
+  "limitations": [
+    "One local run; includes client and Docker networking overhead.",
+    "Measures durable acceptance, not completed delivery.",
+    "Closed-loop load can hide overload; this is not maximum sustainable capacity.",
+    "Receiver deliberately fails first two attempts; synthetic data only."
+  ]
+}

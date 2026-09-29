@@ -1,0 +1,70 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Dispatch API", "version": "0.1.0", "description": "Durable acceptance and bounded at-least-once webhook delivery. Local engineering prototype."},
+  "servers": [{"url": "http://localhost:8080", "description": "Local Docker demo"}],
+  "security": [{"bearerAuth": []}],
+  "paths": {
+    "/v1/events": {
+      "post": {
+        "operationId": "createEvent",
+        "summary": "Persist an event and its delivery job atomically",
+        "description": "Keys are tenant-scoped and retained indefinitely while the event exists. Same key and identical raw body bytes return the same ID and current state, not a frozen original response. Different bytes return 409. Acceptance is not completed delivery.",
+        "parameters": [{"name": "Idempotency-Key", "in": "header", "required": true, "schema": {"type": "string", "pattern": "^[A-Za-z0-9_.:-]{1,128}$"}}],
+        "requestBody": {"required": true, "description": "Maximum raw body size: 65536 bytes.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CreateEvent"}, "example": {"type": "note.created", "payload": {"note_id": "synthetic-001"}}}}},
+        "responses": {
+          "201": {"description": "Event and delivery committed", "headers": {"Location": {"schema": {"type": "string"}, "description": "Relative event resource URL"}}, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Event"}}}},
+          "200": {"description": "Same-key same-body replay; current resource state", "headers": {"Location": {"schema": {"type": "string"}}, "Idempotency-Replayed": {"schema": {"type": "string", "const": "true"}}}, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Event"}}}},
+          "400": {"$ref": "#/components/responses/Problem"},
+          "401": {"$ref": "#/components/responses/Problem"},
+          "409": {"$ref": "#/components/responses/Problem"},
+          "413": {"$ref": "#/components/responses/Problem"},
+          "415": {"$ref": "#/components/responses/Problem"},
+          "422": {"$ref": "#/components/responses/Problem"},
+          "503": {"$ref": "#/components/responses/Problem"},
+          "default": {"$ref": "#/components/responses/Problem"}
+        }
+      }
+    },
+    "/v1/events/{id}": {
+      "parameters": [{"$ref": "#/components/parameters/EventID"}],
+      "get": {
+        "operationId": "getEvent", "summary": "Read an event belonging to the authenticated tenant",
+        "responses": {
+          "200": {"description": "Current event", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Event"}}}},
+          "401": {"$ref": "#/components/responses/Problem"},
+          "404": {"$ref": "#/components/responses/Problem"},
+          "503": {"$ref": "#/components/responses/Problem"},
+          "default": {"$ref": "#/components/responses/Problem"}
+        }
+      }
+    },
+    "/v1/events/{id}/attempts": {
+      "parameters": [{"$ref": "#/components/parameters/EventID"}],
+      "get": {
+        "operationId": "listAttempts", "summary": "Inspect delivery attempts in ascending number order",
+        "description": "The bounded retry policy yields at most six records: five possible HTTP sends and an optional bookkeeping-only exhaustion claim. A started record with null finished_at may represent an interrupted or active attempt. No pagination is needed for this bounded collection.",
+        "responses": {
+          "200": {"description": "Attempt ledger", "content": {"application/json": {"schema": {"type": "object", "required": ["data"], "properties": {"data": {"type": "array", "items": {"$ref": "#/components/schemas/Attempt"}}}}}}},
+          "401": {"$ref": "#/components/responses/Problem"},
+          "404": {"$ref": "#/components/responses/Problem"},
+          "503": {"$ref": "#/components/responses/Problem"},
+          "default": {"$ref": "#/components/responses/Problem"}
+        }
+      }
+    },
+    "/healthz": {"get": {"operationId": "health", "summary": "Check process liveness", "security": [], "responses": {"200": {"description": "Alive", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Health"}}}}}}},
+    "/readyz": {"get": {"operationId": "ready", "summary": "Check database connectivity", "security": [], "responses": {"200": {"description": "Connected", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Health"}}}}, "503": {"$ref": "#/components/responses/Problem"}}}}
+  },
+  "components": {
+    "securitySchemes": {"bearerAuth": {"type": "http", "scheme": "bearer", "description": "Operator-provisioned opaque key mapped to one tenant"}},
+    "parameters": {"EventID": {"name": "id", "in": "path", "required": true, "schema": {"type": "string", "pattern": "^[a-f0-9]{32}$"}}},
+    "responses": {"Problem": {"description": "RFC 9457 problem; stable code extension. Foreign and missing IDs both return not_found.", "content": {"application/problem+json": {"schema": {"$ref": "#/components/schemas/Problem"}}}}},
+    "schemas": {
+      "CreateEvent": {"type": "object", "additionalProperties": false, "required": ["type", "payload"], "properties": {"type": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]{0,99}$"}, "payload": {"type": "object", "additionalProperties": true}}},
+      "Event": {"type": "object", "required": ["id", "type", "payload", "status", "created_at"], "properties": {"id": {"type": "string", "pattern": "^[a-f0-9]{32}$"}, "type": {"type": "string"}, "payload": {"type": "object"}, "status": {"type": "string", "enum": ["accepted", "delivered", "dead_letter"]}, "created_at": {"type": "string", "format": "date-time"}}},
+      "Attempt": {"type": "object", "required": ["number", "started_at", "finished_at", "outcome", "http_status"], "properties": {"number": {"type": "integer", "minimum": 1}, "started_at": {"type": "string", "format": "date-time"}, "finished_at": {"type": ["string", "null"], "format": "date-time"}, "outcome": {"type": "string", "enum": ["started", "retry", "delivered", "dead_letter"]}, "http_status": {"type": "integer", "description": "0 if no HTTP response was recorded"}}},
+      "Problem": {"type": "object", "required": ["type", "title", "status", "code"], "properties": {"type": {"type": "string", "const": "about:blank"}, "title": {"type": "string"}, "status": {"type": "integer"}, "code": {"type": "string"}}},
+      "Health": {"type": "object", "required": ["status"], "properties": {"status": {"type": "string", "enum": ["ok", "ready"]}}}
+    }
+  }
+}
